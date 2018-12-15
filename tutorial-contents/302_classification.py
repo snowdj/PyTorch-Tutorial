@@ -3,15 +3,14 @@ View more, visit my tutorial page: https://morvanzhou.github.io/tutorials/
 My Youtube Channel: https://www.youtube.com/user/MorvanZhou
 
 Dependencies:
-torch: 0.1.11
+torch: 0.4
 matplotlib
 """
 import torch
-from torch.autograd import Variable
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-torch.manual_seed(1)    # reproducible
+# torch.manual_seed(1)    # reproducible
 
 # make fake data
 n_data = torch.ones(100, 2)
@@ -22,8 +21,8 @@ y1 = torch.ones(100)                # class1 y data (tensor), shape=(100, 1)
 x = torch.cat((x0, x1), 0).type(torch.FloatTensor)  # shape (200, 2) FloatTensor = 32-bit floating
 y = torch.cat((y0, y1), ).type(torch.LongTensor)    # shape (200,) LongTensor = 64-bit integer
 
-# torch can only train on Variable, so convert them to Variable
-x, y = Variable(x), Variable(y)
+# The code below is deprecated in Pytorch 0.4. Now, autograd directly supports tensors
+# x, y = Variable(x), Variable(y)
 
 # plt.scatter(x.data.numpy()[:, 0], x.data.numpy()[:, 1], c=y.data.numpy(), s=100, lw=0, cmap='RdYlGn')
 # plt.show()
@@ -59,11 +58,11 @@ for t in range(100):
     if t % 2 == 0:
         # plot and show learning process
         plt.cla()
-        prediction = torch.max(F.softmax(out), 1)[1]
-        pred_y = prediction.data.numpy().squeeze()
+        prediction = torch.max(out, 1)[1]
+        pred_y = prediction.data.numpy()
         target_y = y.data.numpy()
         plt.scatter(x.data.numpy()[:, 0], x.data.numpy()[:, 1], c=pred_y, s=100, lw=0, cmap='RdYlGn')
-        accuracy = sum(pred_y == target_y)/200.
+        accuracy = float((pred_y == target_y).astype(int).sum()) / float(target_y.size)
         plt.text(1.5, -4, 'Accuracy=%.2f' % accuracy, fontdict={'size': 20, 'color':  'red'})
         plt.pause(0.1)
 

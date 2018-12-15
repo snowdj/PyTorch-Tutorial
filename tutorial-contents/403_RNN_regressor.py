@@ -3,17 +3,16 @@ View more, visit my tutorial page: https://morvanzhou.github.io/tutorials/
 My Youtube Channel: https://www.youtube.com/user/MorvanZhou
 
 Dependencies:
-torch: 0.1.11
+torch: 0.4
 matplotlib
 numpy
 """
 import torch
 from torch import nn
-from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
 
-torch.manual_seed(1)    # reproducible
+# torch.manual_seed(1)    # reproducible
 
 # Hyper Parameters
 TIME_STEP = 10      # rnn time step
@@ -21,8 +20,8 @@ INPUT_SIZE = 1      # rnn input size
 LR = 0.02           # learning rate
 
 # show data
-steps = np.linspace(0, np.pi*2, 100, dtype=np.float32)
-x_np = np.sin(steps)    # float32 for converting torch FloatTensor
+steps = np.linspace(0, np.pi*2, 100, dtype=np.float32)  # float32 for converting torch FloatTensor
+x_np = np.sin(steps)
 y_np = np.cos(steps)
 plt.plot(steps, y_np, 'r-', label='target (cos)')
 plt.plot(steps, x_np, 'b-', label='input (sin)')
@@ -53,6 +52,16 @@ class RNN(nn.Module):
             outs.append(self.out(r_out[:, time_step, :]))
         return torch.stack(outs, dim=1), h_state
 
+        # instead, for simplicity, you can replace above codes by follows
+        # r_out = r_out.view(-1, 32)
+        # outs = self.out(r_out)
+        # outs = outs.view(-1, TIME_STEP, 1)
+        # return outs, h_state
+        
+        # or even simpler, since nn.Linear can accept inputs of any dimension 
+        # and returns outputs with same dimension except for the last
+        # outs = self.out(r_out)
+        # return outs
 
 rnn = RNN()
 print(rnn)
@@ -65,21 +74,21 @@ h_state = None      # for initial hidden state
 plt.figure(1, figsize=(12, 5))
 plt.ion()           # continuously plot
 
-for step in range(60):
+for step in range(100):
     start, end = step * np.pi, (step+1)*np.pi   # time range
     # use sin predicts cos
-    steps = np.linspace(start, end, TIME_STEP, dtype=np.float32)
-    x_np = np.sin(steps)    # float32 for converting torch FloatTensor
+    steps = np.linspace(start, end, TIME_STEP, dtype=np.float32, endpoint=False)  # float32 for converting torch FloatTensor
+    x_np = np.sin(steps)
     y_np = np.cos(steps)
 
-    x = Variable(torch.from_numpy(x_np[np.newaxis, :, np.newaxis]))    # shape (batch, time_step, input_size)
-    y = Variable(torch.from_numpy(y_np[np.newaxis, :, np.newaxis]))
+    x = torch.from_numpy(x_np[np.newaxis, :, np.newaxis])    # shape (batch, time_step, input_size)
+    y = torch.from_numpy(y_np[np.newaxis, :, np.newaxis])
 
     prediction, h_state = rnn(x, h_state)   # rnn output
     # !! next step is important !!
-    h_state = Variable(h_state.data)        # repack the hidden state, break the connection from last iteration
+    h_state = h_state.data        # repack the hidden state, break the connection from last iteration
 
-    loss = loss_func(prediction, y)         # cross entropy loss
+    loss = loss_func(prediction, y)         # calculate loss
     optimizer.zero_grad()                   # clear gradients for this training step
     loss.backward()                         # backpropagation, compute gradients
     optimizer.step()                        # apply gradients
